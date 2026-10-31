@@ -308,8 +308,45 @@ export function buildArgs(opts, promptFile = opts.systemPrompt ? 'system-prompt.
 }
 
 /** CLAUDE_BIN may be the claude executable or a .js/.mjs script (run with this Node). */
+let resolvedCommand = null;
 export function claudeCommand() {
-  return /\.[cm]?js$/i.test(config.claudeBin) ? [process.execPath, [config.claudeBin]] : [config.claudeBin, []];
+  if (resolvedCommand && resolvedCommand.bin === config.claudeBin) return resolvedCommand.cmd;
+  let bin = config.claudeBin;
+  if (process.platform === 'win32') bin = resolveWindowsBin(bin);
+  const cmd = /\.[cm]?js$/i.test(bin) ? [process.execPath, [bin]] : [bin, []];
+  resolvedCommand = { bin: config.claudeBin, cmd };
+  return cmd;
+}
+
+/**
+ * On Windows, `npm i -g @anthropic-ai/claude-code` installs a `claude.cmd` shim,
+ * which Node cannot spawn without a shell (and a shell would mangle JSON args).
+ * Find the real target the shim points to instead.
+ */
+export function resolveWindowsBin(bin, pathEnv = process.env.PATH || '', exists = fs.existsSync, read = (f) => fs.readFileSync(f, 'utf8')) {
+  const win = path.win32;
+  const fromShim = (cmdFile) => {
+    try {
+      const m = /"%~?dp0%?\\?([^"]+?\.(?:exe|[cm]?js))"/i.exec(read(cmdFile));
+      if (m) {
+        const target = win.resolve(win.dirname(cmdFile), m[1]);
+        if (exists(target)) return target;
+      }
+    } catch {}
+    return null;
+  };
+  if (/\.cmd$/i.test(bin)) return fromShim(bin) || bin;
+  if (win.extname(bin) || bin.includes('/') || bin.includes('\\')) return bin;
+  for (const dir of pathEnv.split(';').filter(Boolean)) {
+    const exe = win.join(dir, `${bin}.exe`);
+    if (exists(exe)) return exe;
+    const shim = win.join(dir, `${bin}.cmd`);
+    if (exists(shim)) {
+      const target = fromShim(shim);
+      if (target) return target;
+    }
+  }
+  return bin;
 }
 
 /**

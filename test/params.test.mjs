@@ -36,3 +36,24 @@ test('validateSessionId', () => {
   assert.equal(validateSessionId(undefined), null);
   assert.throws(() => validateSessionId('../etc/passwd'));
 });
+
+test('resolveWindowsBin finds claude.exe, or the target of an npm claude.cmd shim', async () => {
+  const { resolveWindowsBin } = await import('../src/claude.js');
+  const r = String.raw;
+  // the exact shim npm writes for @anthropic-ai/claude-code
+  const shim = '@ECHO off\r\nGOTO start\r\n:find_dp0\r\nSET dp0=%~dp0\r\nEXIT /b\r\n:start\r\nSETLOCAL\r\nCALL :find_dp0\r\n' +
+    r`"%dp0%\..\@anthropic-ai\claude-code\bin\claude.exe"   %*` + '\r\n';
+  const target = r`C:\@anthropic-ai\claude-code\bin\claude.exe`;
+  const files = { [r`C:\npm\claude.cmd`]: shim, [target]: '', [r`C:\native\claude.exe`]: '' };
+  const exists = (f) => f in files;
+  const read = (f) => files[f];
+  // npm shim found on PATH
+  assert.equal(resolveWindowsBin('claude', r`C:\nothing;C:\npm`, exists, read), target);
+  // a native .exe earlier on PATH wins
+  assert.equal(resolveWindowsBin('claude', r`C:\native;C:\npm`, exists, read), r`C:\native\claude.exe`);
+  // explicit .cmd path
+  assert.equal(resolveWindowsBin(r`C:\npm\claude.cmd`, '', exists, read), target);
+  // explicit paths and unknown names are left alone
+  assert.equal(resolveWindowsBin(r`D:\tools\claude.exe`, r`C:\npm`, exists, read), r`D:\tools\claude.exe`);
+  assert.equal(resolveWindowsBin('claude', r`C:\empty`, exists, read), 'claude');
+});

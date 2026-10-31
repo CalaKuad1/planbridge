@@ -9,6 +9,7 @@
 - Fix: in streaming mode, errors before the first token returned `200` with an error chunk. They now return the real HTTP status (e.g. 429).
 - Conversations idle for `SESSION_TTL_DAYS` (30) are deleted automatically. `DELETE /v1/sessions/:id` also removes the Claude Code transcript.
 - Fix: warm processes could be started after shutdown.
+- Fix (Windows): Claude Code installed with `npm i -g @anthropic-ai/claude-code` (a `claude.cmd` shim) could not be started. PlanBridge now runs the binary the shim points to.
 - `CLAUDE_BIN` can point to a `.js`/`.mjs` script.
 - Smoke test in English, and it now checks the answers.
 - Cleaner `start --log` output with timestamps.
