@@ -172,9 +172,12 @@ Reference: https://github.com/CalaKuad1/planbridge/blob/main/skills/planbridge/S
 | 🤔 Thinking effort | `reasoning_effort: low … max`; thinking tokens reported in `usage` |
 | 🎛️ Models | `sonnet`, `opus`, `haiku`, `fable` or full ids like `claude-opus-5-5` |
 | 📊 Plan usage | `GET /v1/limits` and `planbridge status` show your 5-hour and 7-day usage |
+| ⚡ Warm pool | keeps a Claude Code process pre-started for your next request: first token in ~1.5 s instead of ~2.5 s |
 | 🛡️ Guard rails | local key, localhost-only, 2 parallel / 30 per minute by default, timeouts, cancels on disconnect |
 
-**Not supported:** function calling / `tools`, `temperature` / `top_p` / `max_tokens` (ignored), embeddings, image generation, and the *text* of the model's thinking (Claude Code doesn't return it). Each request starts the CLI, so expect 2–4 s before the first token. Requests use your plan's normal limits.
+**Not supported:** function calling / `tools`, `temperature` / `top_p` / `max_tokens` (ignored), embeddings, image generation, and the *text* of the model's thinking (Claude Code doesn't return it). The first token arrives in about 1.5 s (about 2.5 s after a pause). Requests use your plan's normal limits.
+
+Memory, web search and agents are intentionally left to your app, so each app can do them its own way. The skill teaches Claude the patterns: a structured-output agent loop, app-side memory, and passing in search results ([snippets](skills/planbridge/references/snippets.md)).
 
 ## CLI
 
@@ -206,6 +209,8 @@ For every request PlanBridge converts the messages, then runs the **unmodified**
 - your system prompt instead of Claude Code's;
 - `--session-id` / `--resume` for conversations, or `--no-session-persistence` when stateless.
 
+After each request it starts the process the *next* request will most likely need (same model and system prompt, or the next turn of that conversation) and keeps it waiting on stdin. Measured on Windows with `haiku`, median time to first token went from 2.49 s to 1.50 s for stateless calls and from 2.44 s to 1.68 s for sessions.
+
 It translates the CLI's `stream-json` output back to OpenAI or Anthropic format. PlanBridge never reads, stores or forwards your Claude credentials; the CLI handles its own login.
 
 ## Configuration
@@ -220,6 +225,7 @@ Optional, in `~/.planbridge/.env` (see [`.env.example`](.env.example)):
 | `DEFAULT_SYSTEM_PROMPT` | short helpful-assistant prompt | used when a request has no system message |
 | `MAX_CONCURRENT` / `MAX_QUEUE` / `RATE_LIMIT_PER_MIN` | `2` / `20` / `30` | protects your plan limits |
 | `REQUEST_TIMEOUT_MS` / `MAX_BODY_MB` | `300000` / `25` | |
+| `WARM_POOL` / `WARM_TTL_MS` | `2` / `300000` | pre-started processes (~240 MB RAM each, `0` disables) and their idle lifetime |
 | `CORS_ORIGIN` | `*` | for local web pages |
 | `CLAUDE_BIN` | `claude` | path to Claude Code |
 
@@ -244,7 +250,7 @@ Claude Code's headless mode (`claude -p`) is an official, documented feature, an
 Projects like [claude-max-api-proxy](https://github.com/wende/claude-max-api-proxy) and [claude-cli-proxy](https://github.com/SenZhangAI/claude-cli-proxy) pioneered wrapping the CLI. PlanBridge adds images, PDFs and files, server-side sessions, JSON schema output, an Anthropic-compatible endpoint, a browser SDK, plan-usage reporting, isolation from your Claude Code config, autostart, and a Claude Code skill. It also has zero dependencies.
 
 **Why is the first token slower than the API?**
-Every request starts a Claude Code process (about 1–2 s). Use `haiku` and sessions to keep it snappy.
+Claude Code adds some start-up work to each request. The warm pool hides most of it. A request with a new model or system prompt, or the first one after 5 idle minutes, still starts cold.
 
 **Does it use my Claude Code settings or tools?**
 No. It runs in safe mode with no tools, in an empty workspace (`~/.planbridge/workspace`).
@@ -265,11 +271,11 @@ PRs welcome: keep it dependency-free and keep the personal-use guard rails. See 
 
 ## Roadmap
 
-- [ ] Persistent memory profiles (notes Claude can read and update between chats)
-- [ ] Opt-in tools per request (web search, read files in a sandbox)
-- [ ] OpenAI-style function calling via MCP
-- [ ] Warm process pool for faster first tokens
+PlanBridge stays a small, plain model API. Memory, search and agents belong in your app (see the skill).
+
+- [x] Warm process pool for faster first tokens
 - [ ] `npx planbridge` on npm
+- [ ] Native OpenAI `tools` field (only if agent frameworks need it; the structured-output loop already works)
 
 ## License
 

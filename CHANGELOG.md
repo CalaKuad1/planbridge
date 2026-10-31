@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0
+
+- Warm process pool: pre-starts the Claude Code process the next request will need (same settings, or the next turn of a session). Median first token 2.49 s → 1.50 s (stateless) and 2.44 s → 1.68 s (sessions). `WARM_POOL`, `WARM_TTL_MS`; pool stats in `/health`.
+- Skill: patterns for app-side memory, search results and agent loops via structured output.
+- Roadmap simplified: PlanBridge stays a plain model API.
+
 ## 1.0.0
 
 - OpenAI-compatible `POST /v1/chat/completions` (streaming, images, PDFs, text files, JSON schema, reasoning effort)

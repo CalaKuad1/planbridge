@@ -122,9 +122,12 @@ Referencia: https://github.com/CalaKuad1/planbridge/blob/main/skills/planbridge/
 | 🤔 Esfuerzo de razonamiento | `reasoning_effort: low … max`; los tokens de thinking salen en `usage` |
 | 🎛️ Modelos | `sonnet`, `opus`, `haiku`, `fable` o ids completos como `claude-opus-5-5` |
 | 📊 Uso del plan | `GET /v1/limits` y `planbridge status` muestran tu uso de las ventanas de 5 h y 7 días |
+| ⚡ Procesos precalentados | deja un proceso de Claude Code arrancado para tu siguiente petición: primer token en ~1,5 s en vez de ~2,5 s |
 | 🛡️ Protecciones | key local, solo localhost, 2 en paralelo / 30 por minuto por defecto, timeouts, cancela si el cliente se va |
 
-**No soportado:** function calling / `tools`, `temperature` / `top_p` / `max_tokens` (se ignoran), embeddings, generar imágenes, ni el *texto* del razonamiento (Claude Code no lo devuelve). Cada petición arranca el CLI, así que el primer token tarda unos 2-4 s. Las peticiones gastan de los límites normales de tu plan.
+**No soportado:** function calling / `tools`, `temperature` / `top_p` / `max_tokens` (se ignoran), embeddings, generar imágenes, ni el *texto* del razonamiento (Claude Code no lo devuelve). El primer token llega en unos 1,5 s (unos 2,5 s tras una pausa). Las peticiones gastan de los límites normales de tu plan.
+
+La memoria, la búsqueda web y los agentes se dejan a propósito a cada app, para que cada una los haga a su manera. El skill le enseña a Claude cómo hacerlos: un bucle de agente con salida estructurada, memoria en la app y pasarle resultados de búsqueda ([snippets](skills/planbridge/references/snippets.md)).
 
 ## CLI
 
@@ -160,7 +163,7 @@ Luego traduce la salida `stream-json` al formato de OpenAI o de Anthropic. Nunca
 
 ## Configuración
 
-Opcional, en `~/.planbridge/.env` (ver [`.env.example`](.env.example)): puerto, host, key, modelo y esfuerzo por defecto, system prompt por defecto, concurrencia (2), cola (20), peticiones por minuto (30), timeout, tamaño máximo (25 MB), CORS y ruta a `claude`.
+Opcional, en `~/.planbridge/.env` (ver [`.env.example`](.env.example)): puerto, host, key, modelo y esfuerzo por defecto, system prompt por defecto, concurrencia (2), cola (20), peticiones por minuto (30), timeout, tamaño máximo (25 MB), procesos precalentados (`WARM_POOL=2`), CORS y ruta a `claude`.
 
 ## Publicar una app
 
@@ -181,7 +184,7 @@ El modo headless de Claude Code (`claude -p`) es una función oficial y document
 [claude-max-api-proxy](https://github.com/wende/claude-max-api-proxy) y [claude-cli-proxy](https://github.com/SenZhangAI/claude-cli-proxy) abrieron el camino. PlanBridge añade imágenes, PDFs y archivos, sesiones en servidor, JSON con esquema, endpoint Anthropic, SDK de navegador, uso del plan, aislamiento de tu configuración, autoarranque y un skill de Claude Code. Y no tiene dependencias.
 
 **¿Por qué tarda más el primer token?**
-Cada petición arranca un proceso de Claude Code (1-2 s). Usa `haiku` y sesiones para que vaya más ágil.
+Claude Code hace algo de trabajo de arranque en cada petición. El pool de procesos precalentados oculta la mayor parte: de 2,49 s a 1,50 s sin sesión y de 2,44 s a 1,68 s con sesión. Cada proceso en espera usa ~240 MB; se configura con `WARM_POOL` (0 lo desactiva).
 
 ## Desarrollo
 

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { config, MODELS, ROOT, VERSION } from './config.js';
-import { runClaude, lastRateLimit } from './claude.js';
+import { runClaude, lastRateLimit, pool } from './claude.js';
 import { convertMessages, textOf } from './convert.js';
 import { sessions } from './sessions.js';
 import { httpError, pickModel, pickEffort, pickSchema, validateSessionId } from './params.js';
@@ -307,7 +307,7 @@ async function handle(req, res) {
       return fs.createReadStream(path.join(ROOT, 'public', file)).pipe(res);
     }
     if (req.method === 'GET' && p === '/health') {
-      return sendJson(res, 200, { ok: true, name: 'planbridge', version: VERSION, active, queued: queue.length, default_model: config.defaultModel });
+      return sendJson(res, 200, { ok: true, name: 'planbridge', version: VERSION, active, queued: queue.length, default_model: config.defaultModel, warm_pool: pool.info() });
     }
 
     checkAuth(req);
@@ -322,7 +322,10 @@ async function handle(req, res) {
     }
     if (req.method === 'GET' && p === '/v1/sessions') return sendJson(res, 200, { data: sessions.list() });
     if (req.method === 'DELETE' && p.startsWith('/v1/sessions/')) {
-      const ok = sessions.remove(decodeURIComponent(p.slice('/v1/sessions/'.length)));
+      const id = decodeURIComponent(p.slice('/v1/sessions/'.length));
+      const s = sessions.get(id);
+      if (s) pool.dropSession(s.claudeSessionId);
+      const ok = sessions.remove(id);
       return sendJson(res, ok ? 200 : 404, { deleted: ok });
     }
     if (req.method === 'GET' && p === '/v1/limits') {

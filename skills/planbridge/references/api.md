@@ -32,7 +32,7 @@ Content parts:
 
 | Route | |
 |---|---|
-| `GET /health` | no auth. `{ok, version, active, queued, default_model}` |
+| `GET /health` | no auth. `{ok, version, active, queued, default_model, warm_pool}` |
 | `GET /v1/models` | aliases |
 | `GET /v1/sessions` · `DELETE /v1/sessions/:id` | list / forget conversations |
 | `GET /v1/limits` | plan usage: `rate_limit.unifiedWindows.five_hour.utilization` (0–1), `seven_day`, `resetsAt` (unix s) |
@@ -44,4 +44,4 @@ OpenAI shape `{error:{message,type,code}}` (Anthropic shape on `/v1/messages`). 
 
 ## Server settings (`~/.planbridge/.env`)
 
-`PLANBRIDGE_PORT` (3456) · `PLANBRIDGE_HOST` (127.0.0.1) · `PLANBRIDGE_API_KEY` · `DEFAULT_MODEL` · `DEFAULT_EFFORT` · `DEFAULT_SYSTEM_PROMPT` · `MAX_CONCURRENT` (2) · `MAX_QUEUE` (20) · `RATE_LIMIT_PER_MIN` (30) · `REQUEST_TIMEOUT_MS` (300000) · `MAX_BODY_MB` (25) · `CORS_ORIGIN` (*) · `CLAUDE_BIN` (claude)
+`PLANBRIDGE_PORT` (3456) · `PLANBRIDGE_HOST` (127.0.0.1) · `PLANBRIDGE_API_KEY` · `DEFAULT_MODEL` · `DEFAULT_EFFORT` · `DEFAULT_SYSTEM_PROMPT` · `MAX_CONCURRENT` (2) · `MAX_QUEUE` (20) · `RATE_LIMIT_PER_MIN` (30) · `REQUEST_TIMEOUT_MS` (300000) · `MAX_BODY_MB` (25) · `CORS_ORIGIN` (*) · `CLAUDE_BIN` (claude) · `WARM_POOL` (2) · `WARM_TTL_MS` (300000)

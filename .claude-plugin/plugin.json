@@ -1,6 +1,6 @@
 {
   "name": "planbridge",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Teaches Claude Code to add AI features to the apps you build for yourself, powered by your local PlanBridge server (your Claude Code subscription as an API).",
   "author": { "name": "CalaKuad1" },
   "homepage": "https://github.com/CalaKuad1/planbridge",

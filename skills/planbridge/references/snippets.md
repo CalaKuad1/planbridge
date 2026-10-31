@@ -161,3 +161,54 @@ jq -n --arg diff "$(git diff --staged | head -c 20000)" \
 ```
 
 Works with no-code tools too (n8n, Open WebUI, LibreChat, Continue, Raycast…): choose "OpenAI-compatible", base URL `http://127.0.0.1:3456/v1`, key from `planbridge key`.
+
+## Agent loop with structured output (function calling without `tools`)
+
+```js
+const ACTIONS = {
+  get_weather: async ({ city }) => (await fetch(`https://wttr.in/${encodeURIComponent(city)}?format=3`)).text(),
+  read_note:   async ({ name }) => fs.readFileSync(`notes/${path.basename(name)}`, 'utf8'),
+};
+const schema = {
+  type: 'object',
+  properties: {
+    action: { type: 'string', enum: [...Object.keys(ACTIONS), 'final_answer'] },
+    args: { type: 'object' },
+    answer: { type: 'string' },
+  },
+  required: ['action'],
+};
+const system = `You can use these actions: get_weather {city}, read_note {name}.
+Reply with one action at a time. When you know the answer, use "final_answer" with "answer".`;
+
+const sessionId = 'agent-' + Date.now();
+let input = userQuestion;
+for (let step = 0; step < 8; step++) {
+  const r = await ai.chat.completions.create({
+    model: 'sonnet',
+    messages: [{ role: 'system', content: system }, { role: 'user', content: input }],
+    response_format: { type: 'json_schema', json_schema: { name: 'step', schema } },
+    session_id: sessionId, // PlanBridge remembers earlier steps
+  });
+  const { action, args = {}, answer } = JSON.parse(r.choices[0].message.content);
+  if (action === 'final_answer') { console.log(answer); break; }
+  const result = await ACTIONS[action](args).catch((e) => `Error: ${e.message}`);
+  input = `<result action="${action}">\n${String(result).slice(0, 20000)}\n</result>`;
+}
+```
+
+## Long-term memory in the app
+
+```js
+// memory.json: ["Prefers metric units", "Has a dog called Toby", ...]
+const facts = JSON.parse(fs.readFileSync('memory.json', 'utf8'));
+const system = `You are my personal assistant.\nWhat you know about me:\n${facts.map((f) => '- ' + f).join('\n')}`;
+// ...answer the user with that system prompt, then learn from the exchange:
+const learn = await ai.chat.completions.create({
+  model: 'haiku',
+  messages: [{ role: 'user', content: `Known facts:\n${facts.join('\n')}\n\nNew exchange:\nUser: ${q}\nAssistant: ${a}\n\nList only NEW lasting facts about the user (or none).` }],
+  response_format: { type: 'json_schema', json_schema: { name: 'facts', schema: { type: 'object', properties: { new_facts: { type: 'array', items: { type: 'string' } } }, required: ['new_facts'] } } },
+});
+facts.push(...JSON.parse(learn.choices[0].message.content).new_facts);
+fs.writeFileSync('memory.json', JSON.stringify(facts, null, 2));
+```

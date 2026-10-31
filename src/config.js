@@ -42,6 +42,8 @@ export function loadConfig() {
     rateLimitPerMin: int(env.RATE_LIMIT_PER_MIN, 30),
     requestTimeoutMs: int(env.REQUEST_TIMEOUT_MS, 300000),
     maxBodyBytes: int(env.MAX_BODY_MB, 25) * 1024 * 1024,
+    warmPool: int(env.WARM_POOL, 2), //            pre-started CLI processes (~240 MB each); 0 disables
+    warmTtlMs: int(env.WARM_TTL_MS, 300000), //    idle warm processes are closed after this
     corsOrigin: env.CORS_ORIGIN ?? '*',
     dataDir,
     workspaceDir,

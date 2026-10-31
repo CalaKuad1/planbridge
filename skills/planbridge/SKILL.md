@@ -47,7 +47,7 @@ Prefer the **official OpenAI SDK** (or plain `fetch`) pointed at `AI_BASE_URL`. 
 Rules that make the result good:
 
 1. **Call from the server side when the app has one** (API route, backend, script). Use `sdk.js` / browser `fetch` only for static local pages.
-2. **Stream** anything the user will read (`stream: true`). Answers take 2–5 s to start; show a typing/loading state.
+2. **Stream** anything the user will read (`stream: true`). The first token takes about 1.5 s (the first request after a pause can take ~2.5 s), so show a typing/loading state. Repeated calls with the same model + system prompt, or the next turn of a session, are faster because PlanBridge keeps a process pre-started for them.
 3. **Pick the model per task**: `haiku` for fast classification/extraction/short replies, `sonnet` (default) for general use, `opus` for hard reasoning or long writing. Add `reasoning_effort: "high"` only where it helps.
 4. **Structured data** → `response_format: { type: "json_schema", json_schema: { name, schema } }`. The result is validated; it is also returned parsed in a top-level `parsed` field.
 5. **Multi-turn chat** → either send the full `messages` history (stateless, like OpenAI) or pass `session_id: "<stable id>"` and send only the new user message (PlanBridge remembers). Use sessions for long chats.
@@ -55,9 +55,18 @@ Rules that make the result good:
 7. **Handle errors**: connection refused → show "PlanBridge is not running — run `planbridge start`"; `429` → plan limit or local rate limit reached, show a retry message; `401` → wrong key.
 8. Write a good **system prompt** for the feature (role, tone, output format, language). PlanBridge replaces Claude Code's default prompt with yours.
 
+## Memory, tools and agents: build them in the app
+
+PlanBridge is deliberately a plain model API. Each app adds the rest in its own code, shaped to what it needs:
+
+- **Long-term memory.** Store facts in the app (a JSON file, SQLite, localStorage) and put the relevant ones in the system prompt (`What you know about the user:\n- …`). To learn new facts, run a cheap `haiku` call after each turn with a `json_schema` like `{ "new_facts": string[] }` and save the result.
+- **Web search, files, databases.** The app fetches the data itself (search API, `fs.readFile`, SQL) and includes it in the user message, inside tags such as `<search_results>…</search_results>`.
+- **Agents / function calling.** Loop with structured output. Describe the available actions in the system prompt, then ask for `json_schema` `{ "action": enum[...|"final_answer"], "args": object, "answer": string }`. Execute the action in code, append the result as a user message, and repeat until `final_answer` (cap at ~8 steps). With `session_id`, send only the new result each step.
+- **Long chats.** Prefer `session_id` over resending a huge history. For stateless apps, summarise old turns with a `haiku` call once the history gets long.
+
 ## What does not work (design around it)
 
-- No function calling / `tools` (ignored). For agent-like flows, do the tool step in code and send results back as text.
+- No native function calling / `tools` field (ignored). Use the structured-output loop above.
 - `temperature`, `top_p`, `max_tokens`, `stop` are ignored. Ask for length in the prompt.
 - No image generation, embeddings, or audio endpoints.
 - The thinking text is not returned (only `usage.completion_tokens_details.reasoning_tokens`).
