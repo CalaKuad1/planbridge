@@ -8,8 +8,6 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         node: [22, 24]
     runs-on: ${{ matrix.os }}
-    env:
-      PLANBRIDGE_HOME: ${{ runner.temp }}/pb
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,6 +19,7 @@ jobs:
         shell: bash
         env:
           CLAUDE_BIN: ${{ github.workspace }}/test/fixtures/fake-claude.mjs
+          PLANBRIDGE_HOME: ${{ runner.temp }}/pb
         run: |
           node bin/planbridge.js --help
           node bin/planbridge.js doctor --deep
