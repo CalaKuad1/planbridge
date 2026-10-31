@@ -1,0 +1,13 @@
+{
+  "name": "planbridge",
+  "owner": { "name": "CalaKuad1" },
+  "metadata": { "description": "PlanBridge: your Claude Code subscription as a local API for your own apps." },
+  "plugins": [
+    {
+      "name": "planbridge",
+      "source": "./",
+      "description": "Skill that wires PlanBridge into apps, scripts and sites you build for yourself.",
+      "version": "1.0.0"
+    }
+  ]
+}

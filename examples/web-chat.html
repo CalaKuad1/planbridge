@@ -1,0 +1,38 @@
+<!doctype html>
+<!-- A complete AI chat page in one file. Open it in your browser while PlanBridge runs. -->
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My AI Chat</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; }
+  #log p { white-space: pre-wrap; } .me { text-align: right; color: #555; }
+  form { display: flex; gap: 8px; } input { flex: 1; padding: 8px; }
+</style>
+</head>
+<body>
+<h1>My AI chat</h1>
+<div id="log"></div>
+<form id="f"><input id="q" placeholder="Ask anything…" autofocus><button>Send</button></form>
+
+<script src="http://127.0.0.1:3456/sdk.js"></script>
+<script>
+  const ai = new PlanBridge({
+    apiKey: localStorage.pbKey || (localStorage.pbKey = prompt('PlanBridge key (run: planbridge key)')),
+    model: 'sonnet',
+    system: 'You are a friendly, concise assistant.',
+  });
+  const chat = ai.chat(); // remembers the conversation
+
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    const text = q.value.trim(); if (!text) return; q.value = '';
+    log.insertAdjacentHTML('beforeend', `<p class="me"></p><p>…</p>`);
+    log.children[log.children.length - 2].textContent = text;
+    const out = log.lastElementChild;
+    try { await chat.send(text, { onText: (_, all) => (out.textContent = all) }); }
+    catch (err) { out.textContent = '⚠ ' + err.message; }
+  };
+</script>
+</body>
+</html>
