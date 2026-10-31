@@ -38,18 +38,19 @@ No API key to buy, no extra bill: each request runs the official `claude` CLI on
 > [!IMPORTANT]
 > **Personal use only.** A Claude subscription covers *your own* use. Anthropic's terms don't allow serving other people with it, reselling it, or putting your login inside apps others use. PlanBridge listens on `127.0.0.1` only and never touches your credentials. If you ship something to other people, point the same code at an Anthropic API key ([see below](#going-public)). PlanBridge is an unofficial community project, not affiliated with or endorsed by Anthropic.
 
-## Install
+## Quick start
 
 You need **Node 21.7+** and **[Claude Code](https://claude.com/claude-code)**, logged in (run `claude` once).
 
 ```bash
-npm install -g planbridge
-planbridge start
+npm install -g planbridge     # 1. install (or skip it: npx planbridge start)
+planbridge start              # 2. run it (or: planbridge autostart on)
+planbridge open               # 3. try the playground in your browser
 ```
 
-Or run it without installing: `npx planbridge start`.
+Your API key is printed at start-up and by `planbridge key`. To let Claude Code wire PlanBridge into your apps, run `planbridge skill install` ([more below](#let-claude-wire-it-in-for-you)).
 
-Or with the one-line installer, which also installs Claude Code if it's missing and sets up the skill:
+Or use the one-line installer. It installs Claude Code if it's missing and sets up the skill:
 
 ```bash
 # macOS / Linux
@@ -60,13 +61,12 @@ curl -fsSL https://raw.githubusercontent.com/CalaKuad1/planbridge/main/scripts/i
 irm https://raw.githubusercontent.com/CalaKuad1/planbridge/main/scripts/install.ps1 | iex
 ```
 
-Then:
+## What people use it for
 
-```bash
-planbridge open             # playground in your browser
-planbridge key              # your local API key
-planbridge autostart on     # start it automatically when you log in
-```
+- **Scripts and automations:** commit messages, renaming files from their contents, summarising a folder of PDFs, a cron job that digests your RSS feeds
+- **Your own tools:** a Raycast or Alfred command, a local notes app with "ask my notes", a personal dashboard
+- **Existing apps:** give Open WebUI, LibreChat, n8n or Continue a Claude brain with no extra API bill
+- **Prototyping:** build an AI feature against your plan, then switch three env vars to an API key when you ship it ([see how](#going-public))
 
 ## Use it from anything
 
@@ -278,7 +278,7 @@ How it is tested:
 
 - **`npm test`** starts the real server against [a fake `claude` CLI](test/fixtures/fake-claude.mjs) that speaks the same `stream-json` protocol. It covers both API formats, streaming, sessions, files, errors, timeouts, limits, disconnects and the warm pool. CI runs it on Windows, macOS and Linux.
 - **[Claude Code compatibility](.github/workflows/claude-code-compat.yml)** installs the *latest* Claude Code every week and checks it still accepts every argument set PlanBridge uses.
-- **`planbridge doctor --deep`** runs the same check plus one real request on your machine, using your Claude.
+- **`planbridge doctor --deep`** checks your Claude Code version against the tested one and sends one real request through the whole pipeline, on your machine and with your Claude.
 
 PRs welcome: keep it dependency-free and keep the personal-use guard rails. See the [roadmap](#roadmap).
 

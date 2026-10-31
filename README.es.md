@@ -31,18 +31,19 @@ No necesitas comprar una API key ni pagar nada extra: cada petición ejecuta el 
 > [!IMPORTANT]
 > **Solo para uso personal.** Tu suscripción cubre *tu* uso. Los términos de Anthropic no permiten dar servicio a otras personas con ella, revenderla ni meter tu login en apps que usen otros. PlanBridge escucha solo en `127.0.0.1` y nunca toca tus credenciales. Si publicas algo para otra gente, apunta el mismo código a una API key de Anthropic ([ver abajo](#publicar-una-app)). Es un proyecto comunitario no oficial, sin relación con Anthropic.
 
-## Instalar
+## Empezar en un minuto
 
 Necesitas **Node 21.7+** y **[Claude Code](https://claude.com/claude-code)** con sesión iniciada (ejecuta `claude` una vez).
 
 ```bash
-npm install -g planbridge
-planbridge start
+npm install -g planbridge     # 1. instalar (o sin instalar: npx planbridge start)
+planbridge start              # 2. arrancar (o: planbridge autostart on)
+planbridge open               # 3. probar el playground en el navegador
 ```
 
-O sin instalar nada: `npx planbridge start`.
+Tu API key sale al arrancar y con `planbridge key`. Para que Claude Code integre PlanBridge en tus apps: `planbridge skill install` ([más abajo](#que-claude-lo-integre-por-ti)).
 
-Si prefieres el instalador de una línea (instala Claude Code si falta y configura el skill):
+O con el instalador de una línea, que instala Claude Code si falta y configura el skill:
 
 ```bash
 # macOS / Linux
@@ -53,13 +54,12 @@ curl -fsSL https://raw.githubusercontent.com/CalaKuad1/planbridge/main/scripts/i
 irm https://raw.githubusercontent.com/CalaKuad1/planbridge/main/scripts/install.ps1 | iex
 ```
 
-Después:
+## Para qué se usa
 
-```bash
-planbridge open             # playground en el navegador
-planbridge key              # tu API key local
-planbridge autostart on     # que arranque solo al iniciar sesión
-```
+- **Scripts y automatizaciones:** mensajes de commit, renombrar archivos según su contenido, resumir una carpeta de PDFs, un cron que te resume tus RSS
+- **Tus propias herramientas:** un comando de Raycast o Alfred, una app de notas con "pregunta a mis notas", un panel personal
+- **Apps que ya usas:** dale a Open WebUI, LibreChat, n8n o Continue un cerebro Claude sin pagar API aparte
+- **Prototipos:** construye una función de IA contra tu plan y, cuando la publiques, cambia tres variables para usar una API key ([cómo](#publicar-una-app))
 
 ## Úsalo desde cualquier sitio
 

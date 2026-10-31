@@ -1,0 +1,38 @@
+name: Installers
+# Runs the one-line installers on clean machines and checks the CLI works afterwards.
+on:
+  push:
+    paths: ['scripts/install.sh', 'scripts/install.ps1', '.github/workflows/installers.yml']
+  schedule:
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+jobs:
+  unix:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: install.sh (installs Claude Code too, since the runner has none)
+        run: sh scripts/install.sh
+      - run: planbridge --version
+      - run: test -f ~/.claude/skills/planbridge/SKILL.md
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: install.ps1 (installs Claude Code too, since the runner has none)
+        shell: pwsh
+        run: ./scripts/install.ps1
+      - shell: pwsh
+        run: |
+          planbridge --version
+          if (-not (Test-Path "$HOME/.claude/skills/planbridge/SKILL.md")) { exit 1 }
