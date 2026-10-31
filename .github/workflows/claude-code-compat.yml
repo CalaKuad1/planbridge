@@ -1,0 +1,23 @@
+name: Claude Code compatibility
+# Installs the latest Claude Code and checks it still accepts every argument
+# set PlanBridge uses. No login needed. Runs weekly and on demand.
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+  push:
+    paths: ['src/claude.js', 'scripts/check-cli-compat.mjs', '.github/workflows/claude-code-compat.yml']
+jobs:
+  compat:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install -g @anthropic-ai/claude-code
+      - run: node scripts/check-cli-compat.mjs

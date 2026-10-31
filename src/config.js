@@ -44,6 +44,7 @@ export function loadConfig() {
     maxBodyBytes: int(env.MAX_BODY_MB, 25) * 1024 * 1024,
     warmPool: int(env.WARM_POOL, 2), //            pre-started CLI processes (~240 MB each); 0 disables
     warmTtlMs: int(env.WARM_TTL_MS, 300000), //    idle warm processes are closed after this
+    sessionTtlDays: int(env.SESSION_TTL_DAYS, 30), // conversations idle longer than this are deleted; 0 keeps them
     corsOrigin: env.CORS_ORIGIN ?? '*',
     dataDir,
     workspaceDir,

@@ -34,14 +34,14 @@ Content parts:
 |---|---|
 | `GET /health` | no auth. `{ok, version, active, queued, default_model, warm_pool}` |
 | `GET /v1/models` | aliases |
-| `GET /v1/sessions` · `DELETE /v1/sessions/:id` | list / forget conversations |
+| `GET /v1/sessions` · `DELETE /v1/sessions/:id` | list / forget conversations (deleting also removes the transcript) |
 | `GET /v1/limits` | plan usage: `rate_limit.unifiedWindows.five_hour.utilization` (0–1), `seven_day`, `resetsAt` (unix s) |
 | `GET /` | playground · `GET /sdk.js` browser SDK |
 
 ## Errors
 
-OpenAI shape `{error:{message,type,code}}` (Anthropic shape on `/v1/messages`). `400` bad request/model · `401` bad key · `413` body too large (25 MB) · `415` unsupported file · `429` plan or local rate limit · `502` Claude Code failed · `504` timeout (300 s).
+OpenAI shape `{error:{message,type,code}}` (Anthropic shape on `/v1/messages`). `400` bad request · `401` bad key · `404` unknown model · `413` body too large (25 MB) · `415` unsupported file · `429` plan or local rate limit · `502` Claude Code failed (check `planbridge doctor`) · `503` Anthropic overloaded, retry · `504` timeout (300 s). In streaming mode an error before the first token still comes back as a normal HTTP error.
 
 ## Server settings (`~/.planbridge/.env`)
 
-`PLANBRIDGE_PORT` (3456) · `PLANBRIDGE_HOST` (127.0.0.1) · `PLANBRIDGE_API_KEY` · `DEFAULT_MODEL` · `DEFAULT_EFFORT` · `DEFAULT_SYSTEM_PROMPT` · `MAX_CONCURRENT` (2) · `MAX_QUEUE` (20) · `RATE_LIMIT_PER_MIN` (30) · `REQUEST_TIMEOUT_MS` (300000) · `MAX_BODY_MB` (25) · `CORS_ORIGIN` (*) · `CLAUDE_BIN` (claude) · `WARM_POOL` (2) · `WARM_TTL_MS` (300000)
+`PLANBRIDGE_PORT` (3456) · `PLANBRIDGE_HOST` (127.0.0.1) · `PLANBRIDGE_API_KEY` · `DEFAULT_MODEL` · `DEFAULT_EFFORT` · `DEFAULT_SYSTEM_PROMPT` · `MAX_CONCURRENT` (2) · `MAX_QUEUE` (20) · `RATE_LIMIT_PER_MIN` (30) · `REQUEST_TIMEOUT_MS` (300000) · `MAX_BODY_MB` (25) · `CORS_ORIGIN` (*) · `CLAUDE_BIN` (claude) · `WARM_POOL` (2) · `WARM_TTL_MS` (300000) · `SESSION_TTL_DAYS` (30)

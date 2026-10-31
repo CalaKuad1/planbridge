@@ -1,21 +1,50 @@
 {
   "name": "planbridge",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Use your Claude Code subscription as a local OpenAI- and Anthropic-compatible API for your own apps, scripts and sites. Zero dependencies.",
   "type": "module",
-  "bin": { "planbridge": "bin/planbridge.js" },
+  "bin": {
+    "planbridge": "bin/planbridge.js"
+  },
   "main": "src/server.js",
-  "files": ["bin", "src", "public", "skills", ".claude-plugin", "README.md", "LICENSE"],
+  "files": [
+    "bin",
+    "src",
+    "public",
+    "skills",
+    ".claude-plugin",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "start": "node bin/planbridge.js start",
     "test": "node --test \"test/*.test.mjs\"",
     "smoke": "node examples/smoke.mjs"
   },
-  "keywords": ["claude", "claude-code", "openai-compatible", "anthropic-compatible", "llm", "local-api", "proxy", "ai", "chatbot", "claude-skill"],
-  "repository": { "type": "git", "url": "git+https://github.com/CalaKuad1/planbridge.git" },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "openai-compatible",
+    "anthropic-compatible",
+    "llm",
+    "local-api",
+    "proxy",
+    "ai",
+    "chatbot",
+    "claude-skill"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CalaKuad1/planbridge.git"
+  },
   "homepage": "https://github.com/CalaKuad1/planbridge#readme",
   "bugs": "https://github.com/CalaKuad1/planbridge/issues",
   "author": "CalaKuad1",
   "license": "MIT",
-  "engines": { "node": ">=21.7" }
+  "engines": {
+    "node": ">=21.7"
+  },
+  "planbridge": {
+    "testedClaudeCode": "2.1.316"
+  }
 }

@@ -138,7 +138,7 @@ La memoria, la búsqueda web y los agentes se dejan a propósito a cada app, par
 | `planbridge open` | abre el playground |
 | `planbridge key [--rotate]` | muestra o regenera tu key |
 | `planbridge env` | variables de entorno para tus apps |
-| `planbridge doctor` | revisa Node, la sesión de Claude Code, el servidor y el skill |
+| `planbridge doctor [--deep]` | revisa Node, la versión y la sesión de Claude Code, el servidor y el skill; `--deep` hace una petición real mínima por todo el sistema |
 | `planbridge skill install [--project]` | instala el skill de Claude Code |
 | `planbridge autostart on\|off` | arranque al iniciar sesión (Programador de tareas / launchd / systemd) |
 | `planbridge stop` | para el servidor |
@@ -163,7 +163,7 @@ Luego traduce la salida `stream-json` al formato de OpenAI o de Anthropic. Nunca
 
 ## Configuración
 
-Opcional, en `~/.planbridge/.env` (ver [`.env.example`](.env.example)): puerto, host, key, modelo y esfuerzo por defecto, system prompt por defecto, concurrencia (2), cola (20), peticiones por minuto (30), timeout, tamaño máximo (25 MB), procesos precalentados (`WARM_POOL=2`), CORS y ruta a `claude`.
+Opcional, en `~/.planbridge/.env` (ver [`.env.example`](.env.example)): puerto, host, key, modelo y esfuerzo por defecto, system prompt por defecto, concurrencia (2), cola (20), peticiones por minuto (30), timeout, tamaño máximo (25 MB), procesos precalentados (`WARM_POOL=2`), borrado de conversaciones inactivas (`SESSION_TTL_DAYS=30`), CORS y ruta a `claude`.
 
 ## Publicar una app
 
@@ -191,7 +191,7 @@ Claude Code hace algo de trabajo de arranque en cada petición. El pool de proce
 ```bash
 git clone https://github.com/CalaKuad1/planbridge && cd planbridge
 npm start        # desde el código
-npm test         # tests unitarios (no necesitan Claude)
+npm test         # tests unitarios y de integración, ~6 s, sin cuenta de Claude (usa un CLI falso)
 npm run smoke    # pruebas de extremo a extremo con el servidor en marcha
 ```
 

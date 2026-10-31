@@ -7,6 +7,7 @@
 OpenAI-compatible · Anthropic-compatible · images, PDFs, sessions, JSON · zero dependencies
 
 [![CI](https://github.com/CalaKuad1/planbridge/actions/workflows/ci.yml/badge.svg)](https://github.com/CalaKuad1/planbridge/actions/workflows/ci.yml)
+[![Claude Code compatibility](https://github.com/CalaKuad1/planbridge/actions/workflows/claude-code-compat.yml/badge.svg)](https://github.com/CalaKuad1/planbridge/actions/workflows/claude-code-compat.yml)
 ![node](https://img.shields.io/badge/node-%E2%89%A521.7-339933)
 ![deps](https://img.shields.io/badge/dependencies-0-brightgreen)
 ![license](https://img.shields.io/badge/license-MIT-blue)
@@ -188,7 +189,7 @@ Memory, web search and agents are intentionally left to your app, so each app ca
 | `planbridge open` | open the playground |
 | `planbridge key [--rotate]` | print or regenerate your local key |
 | `planbridge env` | env vars for your apps |
-| `planbridge doctor` | check Node, Claude Code login, server and skill |
+| `planbridge doctor [--deep]` | check Node, Claude Code version and login, server and skill; `--deep` sends one tiny real request through the whole pipeline |
 | `planbridge skill install [--project]` | install the Claude Code skill |
 | `planbridge autostart on\|off` | start at login (Task Scheduler / launchd / systemd) |
 | `planbridge stop` | stop the server |
@@ -226,6 +227,7 @@ Optional, in `~/.planbridge/.env` (see [`.env.example`](.env.example)):
 | `MAX_CONCURRENT` / `MAX_QUEUE` / `RATE_LIMIT_PER_MIN` | `2` / `20` / `30` | protects your plan limits |
 | `REQUEST_TIMEOUT_MS` / `MAX_BODY_MB` | `300000` / `25` | |
 | `WARM_POOL` / `WARM_TTL_MS` | `2` / `300000` | pre-started processes (~240 MB RAM each, `0` disables) and their idle lifetime |
+| `SESSION_TTL_DAYS` | `30` | conversations idle longer than this are deleted, transcripts included (`0` keeps them) |
 | `CORS_ORIGIN` | `*` | for local web pages |
 | `CLAUDE_BIN` | `claude` | path to Claude Code |
 
@@ -263,9 +265,15 @@ You can bind `PLANBRIDGE_HOST=0.0.0.0` for *your own* devices on a trusted netwo
 ```bash
 git clone https://github.com/CalaKuad1/planbridge && cd planbridge
 npm start            # run from source
-npm test             # unit tests (no Claude needed)
-npm run smoke        # end-to-end against a running server
+npm test             # unit + integration tests, ~6 s, no Claude account needed
+npm run smoke        # end-to-end against a running server and your real Claude Code
 ```
+
+How it is tested:
+
+- **`npm test`** starts the real server against [a fake `claude` CLI](test/fixtures/fake-claude.mjs) that speaks the same `stream-json` protocol. It covers both API formats, streaming, sessions, files, errors, timeouts, limits, disconnects and the warm pool. CI runs it on Windows, macOS and Linux.
+- **[Claude Code compatibility](.github/workflows/claude-code-compat.yml)** installs the *latest* Claude Code every week and checks it still accepts every argument set PlanBridge uses.
+- **`planbridge doctor --deep`** runs the same check plus one real request on your machine, using your Claude.
 
 PRs welcome: keep it dependency-free and keep the personal-use guard rails. See the [roadmap](#roadmap).
 

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { config, MODELS, ROOT, VERSION } from './config.js';
-import { runClaude, lastRateLimit, pool } from './claude.js';
+import { runClaude, lastRateLimit, pool, shutdown } from './claude.js';
 import { convertMessages, textOf } from './convert.js';
 import { sessions } from './sessions.js';
 import { httpError, pickModel, pickEffort, pickSchema, validateSessionId } from './params.js';
@@ -190,7 +190,7 @@ function openaiStream(res, ev, body, { model: requested, convId }) {
       chunk({ role: 'assistant', content: '' }, null, convId ? { session_id: convId } : {});
     };
 
-    ev.on('init', (i) => ((model = i.model || model), start()));
+    ev.on('init', (i) => (model = i.model || model)); // headers wait for the first token, so early errors keep their HTTP status
     ev.on('reasoning', (t) => (start(), chunk({ reasoning_content: t })));
     ev.on('text', (t) => (start(), chunk({ content: t })));
     ev.on('error', (err) => {
@@ -266,7 +266,7 @@ function anthropicStream(res, ev, { model: requested }) {
       });
       send('content_block_start', { index: 0, content_block: { type: 'text', text: '' } });
     };
-    ev.on('init', (i) => ((model = i.model || model), start()));
+    ev.on('init', (i) => (model = i.model || model)); // headers wait for the first token, so early errors keep their HTTP status
     ev.on('text', (t) => (start(), send('content_block_delta', { index: 0, delta: { type: 'text_delta', text: t } })));
     ev.on('error', (err) => {
       if (!started) return reject(err);
@@ -357,6 +357,11 @@ export function startServer({ quiet = false } = {}) {
         console.log(`  Model        ${config.defaultModel} · ${config.maxConcurrent} parallel · ${config.rateLimitPerMin}/min\n`);
         if (!local) console.warn('  ⚠  Listening beyond localhost. Personal use only — never share this with other people.\n');
       }
+      const pruned = sessions.prune();
+      if (pruned && !quiet) console.log(`  Cleaned up ${pruned} conversation(s) idle for more than ${config.sessionTtlDays} days\n`);
+      const t = setInterval(() => sessions.prune(), 6 * 3600 * 1000);
+      t.unref();
+      server.on('close', () => (clearInterval(t), shutdown()));
       resolve(server);
     });
   });

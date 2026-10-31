@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
+import { format } from 'node:util';
 
 const [cmd = 'help', ...rest] = process.argv.slice(2);
 const flags = Object.fromEntries(
@@ -24,6 +25,44 @@ const ok = (m) => console.log(`  ${c.g('✔')} ${m}`);
 const bad = (m) => console.log(`  ${c.r('✘')} ${m}`);
 const warn = (m) => console.log(`  ${c.y('!')} ${m}`);
 
+const PKG = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+
+/** -1 / 0 / 1, or 0 when either side is unknown */
+function compareVersions(a, b) {
+  if (!a || !b) return 0;
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  for (let i = 0; i < 3; i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0) ? 1 : -1;
+  return 0;
+}
+
+/** One tiny real request through the same code path the server uses. */
+async function deepCheck() {
+  console.log(c.b('\n  Deep check') + c.d('  (one tiny request, uses a sliver of your plan)\n'));
+  const { runClaude, shutdown } = await import('../src/claude.js');
+  const t0 = Date.now();
+  const seen = { init: false, text: '', done: null };
+  try {
+    await new Promise((resolve, reject) => {
+      const ev = runClaude({ content: [{ type: 'text', text: 'Reply with exactly: PLANBRIDGE_OK' }], model: 'haiku', systemPrompt: 'Follow instructions exactly.', session: { mode: 'none' } });
+      ev.on('init', () => (seen.init = true));
+      ev.on('text', (t) => (seen.text += t));
+      ev.on('done', (r) => ((seen.done = r), resolve()));
+      ev.on('error', reject);
+    });
+    const ms = Date.now() - t0;
+    seen.init ? ok('CLI announced itself (init event)') : warn('No init event: the stream-json format may have changed');
+    seen.text ? ok('Streaming text deltas arrived') : warn('No streaming deltas: answers will arrive in one piece');
+    /PLANBRIDGE_OK/.test(seen.done.text) ? ok(`Got the expected answer in ${(ms / 1000).toFixed(1)}s (${seen.done.model})`) : warn(`Unexpected answer: ${seen.done.text.slice(0, 80)}`);
+    seen.done.usage.prompt_tokens > 0 ? ok(`Usage reported (${seen.done.usage.prompt_tokens} prompt tokens)`) : warn('No usage numbers in the result');
+  } catch (e) {
+    bad(`Request failed: ${e.message}`);
+    process.exitCode = 1;
+  } finally {
+    shutdown();
+  }
+}
+
 async function health() {
   try {
     const r = await fetch(`${BASE}/health`, { signal: AbortSignal.timeout(1500) });
@@ -40,8 +79,10 @@ const commands = {
       return;
     }
     if (flags.log) {
+      // background mode (autostart): send console output to ~/.planbridge/planbridge.log
       const out = fs.createWriteStream(LOG_FILE, { flags: 'a' });
-      process.stdout.write = process.stderr.write = (s) => (out.write(s), true);
+      const line = (...a) => out.write(`[${new Date().toISOString()}] ${format(...a)}\n`);
+      console.log = console.info = console.warn = console.error = line;
     }
     const { startServer } = await import('../src/server.js');
     await startServer().catch((e) => {
@@ -134,12 +175,20 @@ const commands = {
     const minor = Number(process.versions.node.split('.')[1]);
     major > 21 || (major === 21 && minor >= 7) ? ok(`Node ${process.versions.node}`) : bad(`Node ${process.versions.node} — need 21.7+`);
 
-    const v = spawnSync(config.claudeBin, ['--version'], { encoding: 'utf8', windowsHide: true });
+    const { claudeCommand } = await import('../src/claude.js');
+    const [cmd, pre] = claudeCommand();
+    const run = (args) => spawnSync(cmd, [...pre, ...args], { encoding: 'utf8', windowsHide: true });
+    const v = run(['--version']);
     if (v.status !== 0) {
       bad(`Claude Code not found ("${config.claudeBin}")  ${c.d('→ https://claude.com/claude-code')}`);
     } else {
-      ok(`Claude Code ${v.stdout.trim()}`);
-      const a = spawnSync(config.claudeBin, ['auth', 'status'], { encoding: 'utf8', windowsHide: true });
+      const installed = (v.stdout.match(/\d+\.\d+\.\d+/) || [''])[0];
+      const tested = PKG.planbridge?.testedClaudeCode;
+      const cmp = compareVersions(installed, tested);
+      if (!tested || cmp === 0) ok(`Claude Code ${installed}`);
+      else if (cmp > 0) warn(`Claude Code ${installed} is newer than the version PlanBridge was tested with (${tested}). Run ${c.b('planbridge doctor --deep')} to check it still works.`);
+      else warn(`Claude Code ${installed} is older than the tested version (${tested}). Consider ${c.b('claude update')}.`);
+      const a = run(['auth', 'status']);
       try {
         const s = JSON.parse(a.stdout);
         if (!s.loggedIn) bad('Not logged in  → run `claude` and log in');
@@ -154,8 +203,18 @@ const commands = {
     const h = await health();
     h ? ok(`Server running at ${BASE}`) : warn(`Server not running  ${c.d('→ planbridge start')}`);
     ok(`Data dir ${HOME_DIR}`);
-    const skill = path.join(os.homedir(), '.claude', 'skills', 'planbridge', 'SKILL.md');
-    fs.existsSync(skill) ? ok('Claude Code skill installed') : warn(`Skill not installed  ${c.d('→ planbridge skill install')}`);
+    const claudeDir = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
+    const asSkill = fs.existsSync(path.join(claudeDir, 'skills', 'planbridge', 'SKILL.md'));
+    let asPlugin = false;
+    try {
+      asPlugin = fs.readFileSync(path.join(claudeDir, 'plugins', 'installed_plugins.json'), 'utf8').includes('planbridge');
+    } catch {}
+    asSkill || asPlugin
+      ? ok(`Claude Code skill installed${asPlugin ? ' (plugin)' : ''}`)
+      : warn(`Skill not installed  ${c.d('→ planbridge skill install')}`);
+
+    if (flags.deep) await deepCheck();
+    else console.log(c.d(`\n  Tip: planbridge doctor --deep sends one tiny real request to verify the whole pipeline.`));
     console.log();
   },
 

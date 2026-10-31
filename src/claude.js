@@ -61,7 +61,8 @@ function spawnProc(spec) {
     promptFile = path.join(config.tmpDir, `sp-${crypto.randomUUID()}.txt`);
     fs.writeFileSync(promptFile, spec.systemPrompt);
   }
-  const child = spawn(config.claudeBin, argsOf(spec, promptFile), {
+  const [cmd, pre] = claudeCommand();
+  const child = spawn(cmd, [...pre, ...argsOf(spec, promptFile)], {
     cwd: config.workspaceDir,
     env: childEnv(),
     stdio: ['pipe', 'pipe', 'pipe'],
@@ -101,6 +102,7 @@ function spawnProc(spec) {
 const live = new Set(); // every child we started, so none outlive the server
 const pool = {
   idle: [], // [{proc, timer}]
+  stopped: false,
   stats: { warmHits: 0, coldStarts: 0 },
 
   take(key) {
@@ -113,7 +115,7 @@ const pool = {
 
   /** Start a process now for a request we expect soon. */
   prewarm(spec) {
-    if (config.warmPool <= 0) return;
+    if (config.warmPool <= 0 || this.stopped) return;
     // a session may only have one warm process, and only the latest spec for it
     this.idle
       .filter((e) => e.proc.spec.key === spec.key || (spec.session.id && e.proc.spec.session.id === spec.session.id))
@@ -151,14 +153,18 @@ const pool = {
 };
 export { pool };
 
-const killAll = () => {
+/** Kills every CLI process we started (warm or busy). */
+export function shutdown() {
+  pool.stopped = true;
+  for (const e of [...pool.idle]) clearTimeout(e.timer);
+  pool.idle.length = 0;
   for (const c of live) {
     try {
       c.kill();
     } catch {}
   }
-};
-process.on('exit', killAll);
+}
+process.on('exit', shutdown);
 
 // ---------------------------------------------------------------------------
 // One request
@@ -263,12 +269,7 @@ export function runClaude(opts) {
       clearTimeout(timer);
       if (m.is_error || (m.subtype && m.subtype !== 'success')) {
         const msg = String(m.result || m.subtype || 'unknown error');
-        const status = /rate.?limit|usage limit|limit reached|429/i.test(msg)
-          ? 429
-          : /selected model|not_found_error|invalid_request|API Error: 400/i.test(msg)
-            ? 400
-            : 502;
-        ev.emit('error', httpError(status, msg));
+        ev.emit('error', httpError(errorStatus(m.api_error_status, msg), msg));
         return;
       }
       succeeded = true;
@@ -299,6 +300,30 @@ export function runClaude(opts) {
   child.stdin.end(JSON.stringify({ type: 'user', message: { role: 'user', content: opts.content } }) + '\n');
 
   return ev;
+}
+
+/** The exact CLI arguments PlanBridge would use for a request (for compatibility checks). */
+export function buildArgs(opts, promptFile = opts.systemPrompt ? 'system-prompt.txt' : null) {
+  return argsOf(specOf(opts), promptFile);
+}
+
+/** CLAUDE_BIN may be the claude executable or a .js/.mjs script (run with this Node). */
+export function claudeCommand() {
+  return /\.[cm]?js$/i.test(config.claudeBin) ? [process.execPath, [config.claudeBin]] : [config.claudeBin, []];
+}
+
+/**
+ * HTTP status for a failed CLI result. Prefers the API status the CLI reports;
+ * falls back to the message text for older CLI versions.
+ */
+export function errorStatus(apiStatus, msg = '') {
+  const s = Number(apiStatus);
+  if (s === 429 || /rate.?limit|usage limit|limit reached/i.test(msg)) return 429;
+  if (s === 401 || s === 403) return 502; // Claude Code's own login failed; the client's key was fine
+  if (s === 529 || s === 503 || /overloaded/i.test(msg)) return 503;
+  if (s >= 400 && s < 500) return s === 413 ? 413 : s === 404 ? 404 : 400;
+  if (/selected model|not_found_error|invalid_request|API Error: 400/i.test(msg)) return 400;
+  return 502;
 }
 
 /** If the user pointed the Anthropic env vars at PlanBridge itself, Claude Code would call itself in a loop. */

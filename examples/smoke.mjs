@@ -27,58 +27,58 @@ function redPng() {
 }
 
 const tests = {
-  async texto() {
-    const j = await chat({ messages: [{ role: 'user', content: 'Responde solo: pong' }] });
+  async text() {
+    const j = await chat({ messages: [{ role: 'user', content: 'Reply with just: pong' }] });
     return j.choices[0].message.content;
   },
   async systemPrompt() {
-    const j = await chat({ messages: [{ role: 'system', content: 'Eres un pirata. Responde siempre empezando con "¡Arr!"' }, { role: 'user', content: 'Hola' }] });
+    const j = await chat({ messages: [{ role: 'system', content: 'You are a pirate. Always start your reply with "Arr!"' }, { role: 'user', content: 'Hello' }] });
     return j.choices[0].message.content;
   },
-  async historialSinEstado() {
+  async statelessHistory() {
     const j = await chat({
       messages: [
-        { role: 'user', content: 'Me llamo Aitor.' },
-        { role: 'assistant', content: '¡Encantado, Aitor!' },
-        { role: 'user', content: '¿Cómo me llamo? Una palabra.' },
+        { role: 'user', content: 'My name is Ada.' },
+        { role: 'assistant', content: 'Nice to meet you, Ada!' },
+        { role: 'user', content: 'What is my name? One word.' },
       ],
     });
     return j.choices[0].message.content;
   },
-  async imagen() {
+  async image() {
     const j = await chat({
       messages: [{ role: 'user', content: [
-        { type: 'text', text: '¿De qué color es? Una palabra.' },
+        { type: 'text', text: 'What colour is this image? One word.' },
         { type: 'image_url', image_url: { url: 'data:image/png;base64,' + redPng().toString('base64') } },
       ] }],
     });
     return j.choices[0].message.content;
   },
-  async archivoTexto() {
+  async textFile() {
     const j = await chat({
       messages: [{ role: 'user', content: [
-        { type: 'file', file: { filename: 'notas.txt', file_data: 'data:text/plain;base64,' + Buffer.from('El código del garaje es 7731.').toString('base64') } },
-        { type: 'text', text: '¿Cuál es el código del garaje? Solo el número.' },
+        { type: 'file', file: { filename: 'notes.txt', file_data: 'data:text/plain;base64,' + Buffer.from('The garage code is 7731.').toString('base64') } },
+        { type: 'text', text: 'What is the garage code? Just the number.' },
       ] }],
     });
     return j.choices[0].message.content;
   },
   async jsonSchema() {
     const j = await chat({
-      messages: [{ role: 'user', content: 'Una fruta roja' }],
-      response_format: { type: 'json_schema', json_schema: { name: 'fruta', schema: { type: 'object', properties: { nombre: { type: 'string' } }, required: ['nombre'] } } },
+      messages: [{ role: 'user', content: 'Name one red fruit' }],
+      response_format: { type: 'json_schema', json_schema: { name: 'fruit', schema: { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] } } },
     });
     return j.choices[0].message.content;
   },
-  async sesion() {
+  async session() {
     const id = 'test-' + Date.now();
-    await chat({ session_id: id, messages: [{ role: 'user', content: 'Recuerda: mi número de la suerte es 88. Responde OK.' }] });
-    const j = await chat({ session_id: id, messages: [{ role: 'user', content: '¿Cuál es mi número de la suerte? Solo el número.' }] });
+    await chat({ session_id: id, messages: [{ role: 'user', content: 'Remember: my lucky number is 88. Reply OK.' }] });
+    const j = await chat({ session_id: id, messages: [{ role: 'user', content: 'What is my lucky number? Just the number.' }] });
     await fetch(`${BASE}/sessions/${id}`, { method: 'DELETE', headers: H });
     return j.choices[0].message.content;
   },
   async streaming() {
-    const r = await fetch(`${BASE}/chat/completions`, { method: 'POST', headers: H, body: JSON.stringify({ model: 'haiku', stream: true, stream_options: { include_usage: true }, messages: [{ role: 'user', content: 'Cuenta del 1 al 5 separados por comas' }] }) });
+    const r = await fetch(`${BASE}/chat/completions`, { method: 'POST', headers: H, body: JSON.stringify({ model: 'haiku', stream: true, stream_options: { include_usage: true }, messages: [{ role: 'user', content: 'Count from 1 to 5, comma separated' }] }) });
     let text = '', chunks = 0, usage = null;
     for (const line of (await r.text()).split('\n')) {
       if (!line.startsWith('data: ') || line === 'data: [DONE]') continue;
@@ -87,7 +87,7 @@ const tests = {
       const d = j.choices?.[0]?.delta?.content;
       if (d) (text += d), chunks++;
     }
-    return `${text}  (${chunks} trozos, ${usage?.total_tokens} tokens)`;
+    return `${text}  (${chunks} chunks, ${usage?.total_tokens} tokens)`;
   },
   async anthropic() {
     const r = await fetch(ORIGIN + '/v1/messages', { method: 'POST', headers: { 'x-api-key': KEY, 'content-type': 'application/json', 'anthropic-version': '2023-06-01' }, body: JSON.stringify({ model: 'haiku', max_tokens: 50, system: 'Reply in English.', messages: [{ role: 'user', content: 'Say: bridge ok' }] }) });
@@ -99,20 +99,29 @@ const tests = {
     const r = await fetch(ORIGIN + '/sdk.js');
     return `HTTP ${r.status}, ${(await r.text()).length} bytes`;
   },
-  async sinAuth() {
+  async noAuth() {
     const r = await fetch(`${BASE}/models`);
     return `HTTP ${r.status}`;
   },
 };
 
+const EXPECT = {
+  text: /pong/i, systemPrompt: /^\W*arr/i, statelessHistory: /ada/i, image: /red/i, textFile: /7731/,
+  jsonSchema: /"name":/, session: /88/, streaming: /1, ?2, ?3, ?4, ?5/, anthropic: /bridge ok/i, sdkJs: /HTTP 200/, noAuth: /HTTP 401/,
+};
+let failures = 0;
 const only = process.argv[2];
 for (const [name, fn] of Object.entries(tests)) {
   if (only && name !== only) continue;
   const t = Date.now();
   try {
     const out = String(await fn()).replace(/\s+/g, ' ').slice(0, 120);
-    console.log(`✔ ${name.padEnd(18)} ${((Date.now() - t) / 1000).toFixed(1)}s  ${out}`);
+    const good = !EXPECT[name] || EXPECT[name].test(out);
+    if (!good) failures++;
+    console.log(`${good ? '✔' : '✘'} ${name.padEnd(18)} ${((Date.now() - t) / 1000).toFixed(1)}s  ${out}`);
   } catch (e) {
+    failures++;
     console.log(`✘ ${name.padEnd(18)} ${e.message.slice(0, 300)}`);
   }
 }
+process.exitCode = failures ? 1 : 0;
