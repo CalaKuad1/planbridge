@@ -284,11 +284,15 @@ PRs welcome: keep it dependency-free and keep the personal-use guard rails. See 
 
 ## Roadmap
 
-PlanBridge stays a small, plain model API. Memory, search and agents belong in your app (see the skill).
+PlanBridge stays a small, plain model API. Memory, search and agents belong in your app, and the skill shows how to build them.
 
-- [x] Warm process pool for faster first tokens
-- [x] `npx planbridge` on npm
-- [ ] Native OpenAI `tools` field (only if agent frameworks need it; the structured-output loop already works)
+Next, if people need them:
+
+- **Native OpenAI `tools` field**, so agent frameworks (LangChain, Vercel AI SDK…) work unchanged. Until then, the [structured-output agent loop](skills/planbridge/references/snippets.md#agent-loop-with-structured-output-function-calling-without-tools) covers the same ground.
+- **Homebrew and winget packages**, for installing without Node tooling.
+- **The model's thinking text**, as soon as Claude Code returns it.
+
+Have an idea or need something? [Open an issue](https://github.com/CalaKuad1/planbridge/issues). What's already shipped is in the [changelog](CHANGELOG.md).
 
 ## License
 
