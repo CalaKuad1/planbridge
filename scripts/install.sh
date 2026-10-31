@@ -16,7 +16,7 @@ if ! command -v claude >/dev/null 2>&1; then
 fi
 
 say "Installing planbridge…"
-npm install -g "${PLANBRIDGE_SOURCE:-github:CalaKuad1/planbridge}" >/dev/null
+npm install -g "${PLANBRIDGE_SOURCE:-planbridge}" >/dev/null
 
 planbridge skill install
 planbridge doctor

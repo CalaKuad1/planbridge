@@ -13,7 +13,7 @@ if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
   irm https://claude.ai/install.ps1 | iex
 }
 
-$src = if ($env:PLANBRIDGE_SOURCE) { $env:PLANBRIDGE_SOURCE } else { 'github:CalaKuad1/planbridge' }
+$src = if ($env:PLANBRIDGE_SOURCE) { $env:PLANBRIDGE_SOURCE } else { 'planbridge' }
 Write-Host '  Installing planbridge...'
 npm install -g $src | Out-Null
 

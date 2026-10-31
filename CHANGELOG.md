@@ -12,6 +12,8 @@
 - Fix (Windows): Claude Code installed with `npm i -g @anthropic-ai/claude-code` (a `claude.cmd` shim) could not be started. PlanBridge now runs the binary the shim points to.
 - `CLAUDE_BIN` can point to a `.js`/`.mjs` script.
 - Smoke test in English, and it now checks the answers.
+- Available on npm: `npm i -g planbridge` or `npx planbridge start`. Installers use npm.
+- Demo GIF in the README, drawn from a real recorded run (`docs/demo/`).
 - Cleaner `start --log` output with timestamps.
 
 ## 1.1.0

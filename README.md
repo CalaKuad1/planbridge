@@ -8,6 +8,7 @@ OpenAI-compatible · Anthropic-compatible · images, PDFs, sessions, JSON · zer
 
 [![CI](https://github.com/CalaKuad1/planbridge/actions/workflows/ci.yml/badge.svg)](https://github.com/CalaKuad1/planbridge/actions/workflows/ci.yml)
 [![Claude Code compatibility](https://github.com/CalaKuad1/planbridge/actions/workflows/claude-code-compat.yml/badge.svg)](https://github.com/CalaKuad1/planbridge/actions/workflows/claude-code-compat.yml)
+[![npm](https://img.shields.io/npm/v/planbridge)](https://www.npmjs.com/package/planbridge)
 ![node](https://img.shields.io/badge/node-%E2%89%A521.7-339933)
 ![deps](https://img.shields.io/badge/dependencies-0-brightgreen)
 ![license](https://img.shields.io/badge/license-MIT-blue)
@@ -15,6 +16,8 @@ OpenAI-compatible · Anthropic-compatible · images, PDFs, sessions, JSON · zer
 [English](README.md) · [Español](README.es.md)
 
 </div>
+
+![PlanBridge demo: start it, call it with the OpenAI SDK, check your plan usage](https://raw.githubusercontent.com/CalaKuad1/planbridge/main/docs/demo.gif)
 
 ---
 
@@ -40,9 +43,11 @@ No API key to buy, no extra bill: each request runs the official `claude` CLI on
 You need **Node 21.7+** and **[Claude Code](https://claude.com/claude-code)**, logged in (run `claude` once).
 
 ```bash
-npm install -g github:CalaKuad1/planbridge
+npm install -g planbridge
 planbridge start
 ```
+
+Or run it without installing: `npx planbridge start`.
 
 Or with the one-line installer, which also installs Claude Code if it's missing and sets up the skill:
 
@@ -282,7 +287,7 @@ PRs welcome: keep it dependency-free and keep the personal-use guard rails. See 
 PlanBridge stays a small, plain model API. Memory, search and agents belong in your app (see the skill).
 
 - [x] Warm process pool for faster first tokens
-- [ ] `npx planbridge` on npm
+- [x] `npx planbridge` on npm
 - [ ] Native OpenAI `tools` field (only if agent frameworks need it; the structured-output loop already works)
 
 ## License

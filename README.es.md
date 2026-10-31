@@ -10,6 +10,8 @@ Compatible con OpenAI · Compatible con Anthropic · imágenes, PDFs, sesiones, 
 
 </div>
 
+![PlanBridge demo: start it, call it with the OpenAI SDK, check your plan usage](https://raw.githubusercontent.com/CalaKuad1/planbridge/main/docs/demo.gif)
+
 ---
 
 Ya pagas Claude Pro o Max y tienes Claude Code instalado. PlanBridge deja que tus propios proyectos usen ese mismo Claude, con el formato de API que ya entiende cualquier herramienta:
@@ -34,9 +36,11 @@ No necesitas comprar una API key ni pagar nada extra: cada petición ejecuta el 
 Necesitas **Node 21.7+** y **[Claude Code](https://claude.com/claude-code)** con sesión iniciada (ejecuta `claude` una vez).
 
 ```bash
-npm install -g github:CalaKuad1/planbridge
+npm install -g planbridge
 planbridge start
 ```
+
+O sin instalar nada: `npx planbridge start`.
 
 Si prefieres el instalador de una línea (instala Claude Code si falta y configura el skill):
 
